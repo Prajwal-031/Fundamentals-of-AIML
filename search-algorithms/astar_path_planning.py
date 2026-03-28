@@ -1,3 +1,10 @@
+"""
+Implement  pathfinding with obstacle handling in grid navigation using A* algorithm. 
+The grid is represented as a 2D list where 0 indicates a free cell and 1 indicates an obstacle. 
+The algorithm should find the shortest path from the top-left corner (0,0) to the bottom-right corner (n-1,m-1) while avoiding obstacles. 
+The heuristic function used is the Manhattan distance.
+"""
+
 import heapq
 
 def heuristic(x,y,gx,gy):
