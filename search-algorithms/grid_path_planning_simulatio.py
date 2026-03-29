@@ -1,9 +1,18 @@
+"""
+feat: add grid-based path planning simulation using BFS, DFS, and A* algorithms
+
+- Implemented BFS, DFS, and A* for shortest path discovery
+- Supports obstacle handling in a 2D grid
+- Added visualization and step-by-step exploration simulation using matplotlib
+"""
+
+
 import matplotlib.pyplot as plt
 import time
 from collections import deque
 import heapq
 
-# Grid: 0 = free, 1 = blocked
+##Grid: 0 = free, 1 = blocked
 
 grid = [
     [0,0,0,1,0,0,0,0,0,0],
