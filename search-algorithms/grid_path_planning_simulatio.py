@@ -287,6 +287,27 @@ def dijkstra_sim():
 
     return path, explored
 
+def compare_algorithms():
+    results = {}
+
+    start_time = time.time()
+    p, e = bfs()
+    results["BFS"] = (len(p)-1 if p else 0, len(e), time.time()-start_time)
+
+    start_time = time.time()
+    p, e = dfs()
+    results["DFS"] = (len(p)-1 if p else 0, len(e), time.time()-start_time)
+
+    start_time = time.time()
+    p, e = dijkstra()
+    results["Dijkstra"] = (len(p)-1 if p else 0, len(e), time.time()-start_time)
+
+    start_time = time.time()
+    p, e = astar()
+    results["A*"] = (len(p)-1 if p else 0, len(e), time.time()-start_time)
+
+    return results
+
 def simulate_all():
     plt.ion()
     plt.figure(figsize=(6,6))
@@ -298,10 +319,11 @@ def simulate_all():
     time.sleep(1)
     print('Simulating A*...')
     p_astar, e_astar = astar_sim()
-    plt.ioff()
+    time.sleep(1)
     plt.show()
     print('Simulating Dijkstra...')
     p_dij, e_dij = dijkstra_sim()
+    plt.ioff() 
     return p_bfs, e_bfs, p_dfs, e_dfs, p_astar, e_astar, p_dij, e_dij
 
 if __name__=="__main__":
@@ -309,6 +331,7 @@ if __name__=="__main__":
     p_dfs, e_dfs = dfs()
     p_astar, e_astar = astar()
     p_dij, e_dij = dijkstra()
+    results = compare_algorithms()
     print("BFS path length:", len(p_bfs)-1 if p_bfs else "none", "explored:", len(e_bfs), "nodes")
     print("BFS path:", p_bfs)
     print("DFS path length:", len(p_dfs)-1 if p_dfs else "none", "explored:", len(e_dfs), "nodes")
@@ -317,4 +340,11 @@ if __name__=="__main__":
     print("A* path:", p_astar)
     print("Dijkstra path length:", len(p_dij)-1 if p_dij else "none","explored:", len(e_dij), "nodes")
     print("Dijkstra path:", p_dij)
+    print("\nAlgorithm Comparison\n")
+    print("Algorithm | Path Length | Nodes Explored | Time")
+    print("-----------------------------------------------")
+    for k,v in results.items():
+        print(f"{k:9} | {v[0]:11} | {v[1]:14} | {v[2]:.6f}s")
     simulate_all()
+
+    
