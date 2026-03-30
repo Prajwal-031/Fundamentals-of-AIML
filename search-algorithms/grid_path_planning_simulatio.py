@@ -101,6 +101,50 @@ def bfs():
     while cur: path.append(cur); cur=parent[cur]
     return list(reversed(path)), explored
 
+def dijkstra():
+    pq = []
+    heapq.heappush(pq, (0, start))
+    
+    dist = {start: 0}
+    parent = {start: None}
+    visited = set()
+    explored = []
+
+    while pq:
+        cost, n = heapq.heappop(pq)
+
+        if n in visited:
+            continue
+
+        visited.add(n)
+        explored.append(n)
+
+        if n == goal:
+            break
+
+        for dx, dy in dirs:
+            m = (n[0] + dx, n[1] + dy)
+
+            if 0 <= m[0] < rows and 0 <= m[1] < cols and grid[m[0]][m[1]] == 0:
+                new_cost = cost + 1
+
+                if m not in dist or new_cost < dist[m]:
+                    dist[m] = new_cost
+                    parent[m] = n
+                    heapq.heappush(pq, (new_cost, m))
+
+    if goal not in parent:
+        return None, explored
+
+    path = []
+    cur = goal
+    while cur:
+        path.append(cur)
+        cur = parent[cur]
+
+    return list(reversed(path)), explored
+
+
 def dfs():
     stack=[start]; visited={start}; parent={start:None}; explored=[]
     while stack:
@@ -195,6 +239,54 @@ def astar_sim():
     draw(explored=explored, path=path, robot=goal, title='A* Final Path')
     return path, explored
 
+def dijkstra_sim():
+    pq = []
+    heapq.heappush(pq, (0, start))
+
+    dist = {start: 0}
+    parent = {start: None}
+    visited = set()
+    explored = []
+
+    while pq:
+        cost, n = heapq.heappop(pq)
+
+        if n in visited:
+            continue
+
+        visited.add(n)
+        explored.append(n)
+
+        draw(explored=explored, robot=n, title='Dijkstra Exploration')
+
+        if n == goal:
+            break
+
+        for dx, dy in dirs:
+            m = (n[0] + dx, n[1] + dy)
+
+            if 0 <= m[0] < rows and 0 <= m[1] < cols and grid[m[0]][m[1]] == 0:
+                new_cost = cost + 1
+
+                if m not in dist or new_cost < dist[m]:
+                    dist[m] = new_cost
+                    parent[m] = n
+                    heapq.heappush(pq, (new_cost, m))
+
+    if goal not in parent:
+        return None, explored
+
+    path = []
+    cur = goal
+    while cur:
+        path.append(cur)
+        cur = parent[cur]
+
+    path = list(reversed(path))
+    draw(explored=explored, path=path, robot=goal, title='Dijkstra Final Path')
+
+    return path, explored
+
 def simulate_all():
     plt.ion()
     plt.figure(figsize=(6,6))
@@ -208,16 +300,21 @@ def simulate_all():
     p_astar, e_astar = astar_sim()
     plt.ioff()
     plt.show()
-    return p_bfs, e_bfs, p_dfs, e_dfs, p_astar, e_astar
+    print('Simulating Dijkstra...')
+    p_dij, e_dij = dijkstra_sim()
+    return p_bfs, e_bfs, p_dfs, e_dfs, p_astar, e_astar, p_dij, e_dij
 
 if __name__=="__main__":
     p_bfs, e_bfs = bfs()
     p_dfs, e_dfs = dfs()
     p_astar, e_astar = astar()
+    p_dij, e_dij = dijkstra()
     print("BFS path length:", len(p_bfs)-1 if p_bfs else "none", "explored:", len(e_bfs), "nodes")
     print("BFS path:", p_bfs)
     print("DFS path length:", len(p_dfs)-1 if p_dfs else "none", "explored:", len(e_dfs), "nodes")
     print("DFS path:", p_dfs)
     print("A* path length:", len(p_astar)-1 if p_astar else "none", "explored:", len(e_astar), "nodes")
     print("A* path:", p_astar)
+    print("Dijkstra path length:", len(p_dij)-1 if p_dij else "none","explored:", len(e_dij), "nodes")
+    print("Dijkstra path:", p_dij)
     simulate_all()
