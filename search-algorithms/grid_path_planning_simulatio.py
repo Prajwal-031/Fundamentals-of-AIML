@@ -9,6 +9,7 @@ feat: add grid-based path planning simulation using BFS, DFS, and A* algorithms
 
 import matplotlib.pyplot as plt
 import time
+import math
 from collections import deque
 import heapq
 
@@ -182,6 +183,158 @@ def astar():
     while cur: path.append(cur); cur=parent[cur]
     return list(reversed(path)), explored
 
+# Alpha-Beta Pruning tree for visual simulation
+ab_tree = [
+    [[10, 9], [14, 18]],
+    [[5, 4], [50, 3]]
+]
+
+ab_positions = {
+    0: (0, 0),
+    1: (-2, -1),
+    2: (2, -1),
+    3: (-3, -2),
+    4: (-1, -2),
+    5: (1, -2),
+    6: (3, -2),
+    7: (-3.5, -3),
+    8: (-2.5, -3),
+    9: (-1.5, -3),
+    10: (-0.5, -3),
+    11: (0.5, -3),
+    12: (1.5, -3),
+    13: (2.5, -3),
+    14: (3.5, -3)
+}
+
+leaf_values = {
+    7: 10, 8: 9, 9: 14, 10: 18,
+    11: 5, 12: 4, 13: 50, 14: 3
+}
+
+def mark_pruned_nodes(node_id, pruned):
+    if node_id in pruned:
+        return
+    pruned.add(node_id)
+    if node_id < 7:
+        mark_pruned_nodes(node_id * 2 + 1, pruned)
+        mark_pruned_nodes(node_id * 2 + 2, pruned)
+
+
+def alpha_beta_steps(node, depth, alpha, beta, maximizingPlayer, node_id, events, pruned):
+    events.append(('visit', node_id, alpha, beta))
+    if depth == 3:
+        events.append(('leaf', node_id, node))
+        return node
+
+    if maximizingPlayer:
+        max_eval = -math.inf
+        for i, child in enumerate(node):
+            child_id = node_id * 2 + 1 + i
+            value = alpha_beta_steps(child, depth + 1, alpha, beta, False, child_id, events, pruned)
+            max_eval = max(max_eval, value)
+            alpha = max(alpha, value)
+            events.append(('update', node_id, max_eval, alpha, beta))
+            if beta <= alpha:
+                for j in range(i + 1, len(node)):
+                    prune_id = node_id * 2 + 1 + j
+                    mark_pruned_nodes(prune_id, pruned)
+                    events.append(('prune', prune_id))
+                break
+        return max_eval
+    else:
+        min_eval = math.inf
+        for i, child in enumerate(node):
+            child_id = node_id * 2 + 1 + i
+            value = alpha_beta_steps(child, depth + 1, alpha, beta, True, child_id, events, pruned)
+            min_eval = min(min_eval, value)
+            beta = min(beta, value)
+            events.append(('update', node_id, min_eval, alpha, beta))
+            if beta <= alpha:
+                for j in range(i + 1, len(node)):
+                    prune_id = node_id * 2 + 1 + j
+                    mark_pruned_nodes(prune_id, pruned)
+                    events.append(('prune', prune_id))
+                break
+        return min_eval
+
+
+def draw_ab_tree(ax, active=None, pruned=None, title="", node_values=None):
+    if pruned is None:
+        pruned = set()
+    if node_values is None:
+        node_values = {}
+    ax.cla()
+    ax.set_xlim(-4.5, 4.5)
+    ax.set_ylim(1, -4)
+
+    # draw edges
+    for node_id, (x, y) in ab_positions.items():
+        if node_id < 7:
+            left = node_id * 2 + 1
+            right = node_id * 2 + 2
+            if left in ab_positions:
+                x2, y2 = ab_positions[left]
+                ax.plot([x, x2], [y, y2], 'k-', linewidth=1)
+            if right in ab_positions:
+                x2, y2 = ab_positions[right]
+                ax.plot([x, x2], [y, y2], 'k-', linewidth=1)
+
+    for node_id, (x, y) in ab_positions.items():
+        color = 'white'
+        edgecolor = 'black'
+        if node_id in pruned:
+            color = '#ff9999'
+        elif node_id == active:
+            color = '#85e085'
+        circle = plt.Circle((x, y), 0.35, color=color, ec=edgecolor, linewidth=2)
+        ax.add_patch(circle)
+
+        label = ''
+        if node_id >= 7:
+            label = str(leaf_values[node_id])
+        elif node_id in node_values:
+            label = str(node_values[node_id])
+
+        if label:
+            ax.text(x, y, label, fontsize=12, ha='center', va='center', weight='bold')
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    if title:
+        ax.set_title(title)
+    ax.figure.canvas.draw_idle()
+    plt.pause(0.6)
+
+
+def alpha_beta_sim():
+    fig, ax = plt.subplots(figsize=(6, 6))
+    plt.ion()
+    events = []
+    pruned = set()
+    alpha_beta_steps(ab_tree, 0, -math.inf, math.inf, True, 0, events, pruned)
+    pruned_nodes = set()
+    node_values = {}
+    for index, event in enumerate(events, start=1):
+        event_type = event[0]
+        node_id = event[1]
+
+        if event_type == 'visit':
+            draw_ab_tree(ax, active=node_id, pruned=pruned_nodes, title=f'Alpha-Beta Step {index}', node_values=node_values)
+        elif event_type == 'leaf':
+            node_values[node_id] = event[2]
+            draw_ab_tree(ax, active=node_id, pruned=pruned_nodes, title=f'Alpha-Beta Step {index}', node_values=node_values)
+        elif event_type == 'update':
+            node_values[node_id] = event[2]
+            draw_ab_tree(ax, active=node_id, pruned=pruned_nodes, title=f'Alpha-Beta Step {index}', node_values=node_values)
+        elif event_type == 'prune':
+            pruned_nodes.add(node_id)
+            draw_ab_tree(ax, active=None, pruned=pruned_nodes, title=f'Alpha-Beta Step {index} (Pruned)', node_values=node_values)
+        else:
+            draw_ab_tree(ax, active=node_id, pruned=pruned_nodes, title=f'Alpha-Beta Step {index}', node_values=node_values)
+    plt.ioff()
+
+
 def bfs_sim():
     q = deque([start]); visited={start}; parent={start:None}; explored=[]
     while q:
@@ -319,6 +472,9 @@ def simulate_all():
     time.sleep(1)
     print('Simulating A*...')
     p_astar, e_astar = astar_sim()
+    time.sleep(1)
+    print('Simulating Alpha-Beta Pruning...')
+    alpha_beta_sim()
     time.sleep(1)
     plt.show()
     print('Simulating Dijkstra...')
